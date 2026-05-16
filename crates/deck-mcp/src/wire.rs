@@ -29,6 +29,7 @@ pub struct JsonRpcError {
     pub data: Option<Value>,
 }
 
+#[must_use]
 pub fn make_request(id: u64, method: &str, params: Option<Value>) -> String {
     let req = JsonRpcRequest {
         jsonrpc: "2.0",

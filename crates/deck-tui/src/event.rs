@@ -55,7 +55,7 @@ impl EventStream {
     }
 }
 
-fn map_key(code: KeyCode, mods: KeyModifiers) -> Event {
+const fn map_key(code: KeyCode, mods: KeyModifiers) -> Event {
     if mods.contains(KeyModifiers::CONTROL) && matches!(code, KeyCode::Char('c' | 'd')) {
         return Event::Quit;
     }

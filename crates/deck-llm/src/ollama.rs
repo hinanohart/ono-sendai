@@ -48,7 +48,7 @@ struct ChatResponse {
     done: bool,
 }
 
-fn wire_role(role: Role) -> &'static str {
+const fn wire_role(role: Role) -> &'static str {
     match role {
         Role::System => "system",
         Role::User => "user",

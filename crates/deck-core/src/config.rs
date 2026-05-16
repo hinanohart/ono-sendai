@@ -11,25 +11,13 @@ use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct Config {
     pub llm: LlmConfig,
     pub mcp: McpConfig,
     pub store: StoreConfig,
     pub sandbox: SandboxConfig,
     pub tui: TuiConfig,
-}
-
-impl Default for Config {
-    fn default() -> Self {
-        Self {
-            llm: LlmConfig::default(),
-            mcp: McpConfig::default(),
-            store: StoreConfig::default(),
-            sandbox: SandboxConfig::default(),
-            tui: TuiConfig::default(),
-        }
-    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -65,7 +53,7 @@ pub struct McpConfig {
     pub approval_timeout_secs: u64,
 }
 
-fn default_approval_timeout() -> u64 {
+const fn default_approval_timeout() -> u64 {
     30
 }
 
@@ -82,20 +70,14 @@ pub struct McpServerSpec {
     pub profile: Option<PathBuf>,
 }
 
-fn default_true() -> bool {
+const fn default_true() -> bool {
     true
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct StoreConfig {
     /// Root directory for encrypted decks (default: `$XDG_DATA_HOME/ono-sendai/decks`).
     pub root: Option<PathBuf>,
-}
-
-impl Default for StoreConfig {
-    fn default() -> Self {
-        Self { root: None }
-    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

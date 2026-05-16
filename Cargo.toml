@@ -71,6 +71,24 @@ nursery = { level = "warn", priority = -1 }
 module_name_repetitions = "allow"
 missing_errors_doc = "allow"
 missing_panics_doc = "allow"
+significant_drop_tightening = "allow"
+significant_drop_in_scrutinee = "allow"
+or_fun_call = "allow"
+doc_lazy_continuation = "allow"
+too_long_first_doc_paragraph = "allow"
+multiple_crate_versions = "allow"
+must_use_candidate = "allow"
+return_self_not_must_use = "allow"
+needless_pass_by_value = "allow"
+cognitive_complexity = "allow"
+needless_continue = "allow"
+collapsible_match = "allow"
+collapsible_if = "allow"
+option_if_let_else = "allow"
+redundant_closure_for_method_calls = "allow"
+items_after_statements = "allow"
+unnecessary_wraps = "allow"
+unused_async = "allow"
 
 [package]
 name = "ono-sendai"
@@ -85,6 +103,9 @@ description.workspace = true
 keywords.workspace = true
 categories.workspace = true
 readme = "README.md"
+
+[lints]
+workspace = true
 
 [[bin]]
 name = "ono-sendai"

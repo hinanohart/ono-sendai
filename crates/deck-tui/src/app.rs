@@ -69,11 +69,11 @@ impl App {
                 self.pending_assistant.push_str(&text);
             }
             OrchEvent::AssistantTurn { message, .. } => {
-                if !self.pending_assistant.is_empty() {
+                if self.pending_assistant.is_empty() {
+                    self.log.push(format!("< {}", message.content));
+                } else {
                     self.log.push(format!("< {}", self.pending_assistant));
                     self.pending_assistant.clear();
-                } else {
-                    self.log.push(format!("< {}", message.content));
                 }
             }
             OrchEvent::ToolCallProposed { call } => {

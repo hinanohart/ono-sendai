@@ -1,4 +1,4 @@
-//! Plain SQLite store, designed to be wrapped by an `age`-encrypted file in
+//! Plain `SQLite` store, designed to be wrapped by an `age`-encrypted file in
 //! Phase 2 (decrypt-to-tmpfs lifecycle). The schema is intentionally small:
 //! a single `messages` table keyed by `(session_id, seq)`.
 
@@ -23,7 +23,7 @@ impl SqliteStore {
         }
         let conn = Connection::open(&path).map_err(|e| DeckError::Store(format!("open: {e}")))?;
         conn.execute_batch(
-            r#"
+            r"
             PRAGMA journal_mode = WAL;
             PRAGMA foreign_keys = ON;
             CREATE TABLE IF NOT EXISTS sessions (
@@ -38,7 +38,7 @@ impl SqliteStore {
                 tool_calls TEXT NOT NULL DEFAULT '[]',
                 PRIMARY KEY (session_id, seq)
             );
-            "#,
+            ",
         )
         .map_err(|e| DeckError::Store(format!("init schema: {e}")))?;
         Ok(Self {
@@ -47,6 +47,7 @@ impl SqliteStore {
         })
     }
 
+    #[must_use]
     pub fn path(&self) -> &Path {
         &self.path
     }

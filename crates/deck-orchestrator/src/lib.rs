@@ -183,7 +183,7 @@ mod tests {
     use super::*;
     use async_trait::async_trait;
     use deck_core::{DeckError, Message, Role};
-    use futures::stream::{self, BoxStream, StreamExt as _};
+    use futures::stream::{self, BoxStream};
     use tokio::sync::Mutex as AsyncMutex;
 
     struct EchoLlm;

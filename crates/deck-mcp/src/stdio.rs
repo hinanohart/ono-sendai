@@ -173,7 +173,7 @@ impl McpClient for StdioMcpClient {
         let result = resp.result.unwrap_or(json!({}));
         let is_error = result
             .get("isError")
-            .and_then(|v| v.as_bool())
+            .and_then(serde_json::Value::as_bool)
             .unwrap_or(false);
         Ok(ToolResult {
             call_id: call.id.clone(),

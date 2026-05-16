@@ -24,8 +24,7 @@ impl MockBackend {
             .iter()
             .rev()
             .find(|m| matches!(m.role, Role::User))
-            .map(|m| m.content.as_str())
-            .unwrap_or("(no input)");
+            .map_or("(no input)", |m| m.content.as_str());
         if self.reply_template.is_empty() {
             format!("[mock] you said: {last_user}")
         } else {
