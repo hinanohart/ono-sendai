@@ -4,8 +4,10 @@
 //! HTTP. A `llama-cpp` in-process backend lives behind a `llama-cpp` feature
 //! flag and is wired in Phase 2.
 
+pub mod mock;
 pub mod ollama;
 
+pub use mock::MockBackend;
 pub use ollama::OllamaBackend;
 
 use deck_core::LlmBackend;
@@ -19,6 +21,7 @@ pub fn from_config(cfg: &deck_core::config::LlmConfig) -> deck_core::Result<Box<
             cfg.endpoint.clone(),
             std::time::Duration::from_secs(cfg.timeout_secs),
         ))),
+        "mock" => Ok(Box::new(MockBackend::default())),
         other => Err(deck_core::DeckError::Llm(format!(
             "unknown backend: {other}"
         ))),

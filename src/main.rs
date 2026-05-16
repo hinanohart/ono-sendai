@@ -1,11 +1,16 @@
 //! ono-sendai — Console Cowboy deck
 //!
-//! Single-binary terminal cyberdeck: TUI (ratatui) + local LLM (ollama/llama.cpp via trait)
-//! + MCP client (rmcp) + age-encrypted local context store + seccomp/landlock sandbox
-//! for untrusted MCP servers. No telemetry, no cloud dependency, offline-first.
+//! Single-binary terminal cyberdeck: TUI (ratatui) + local LLM (ollama/mock)
+//! + MCP client (rmcp) + age-encrypted local context store + seccomp/landlock
+//! sandbox for untrusted MCP servers. No telemetry, no cloud dependency.
 
-use anyhow::Result;
+use std::sync::Arc;
+
+use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
+use deck_core::{LlmBackend, SessionId, Store};
+use deck_orchestrator::Runtime;
+use deck_store::SqliteStore;
 use tracing::info;
 use tracing_subscriber::EnvFilter;
 
@@ -19,6 +24,10 @@ struct Cli {
     /// Verbosity (-v info, -vv debug, -vvv trace)
     #[arg(short, long, global = true, action = clap::ArgAction::Count)]
     verbose: u8,
+
+    /// Force a specific LLM backend (overrides config). "mock" runs offline.
+    #[arg(long, global = true)]
+    backend: Option<String>,
 
     #[command(subcommand)]
     command: Option<Command>,
@@ -49,13 +58,15 @@ enum DeckAction {
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let cli = Cli::parse();
+    let mut cli = Cli::parse();
     init_tracing(cli.verbose);
     info!(version = env!("CARGO_PKG_VERSION"), "ono-sendai starting");
 
-    match cli.command.unwrap_or(Command::Run) {
-        Command::Run => run_tui(cli.config).await,
-        Command::Config => print_config(cli.config),
+    let backend_override = cli.backend.take();
+    let cmd = cli.command.take().unwrap_or(Command::Run);
+    match cmd {
+        Command::Run => run_tui(backend_override).await,
+        Command::Config => print_config(),
         Command::Doctor => run_doctor().await,
         Command::Deck { action } => handle_deck(action).await,
     }
@@ -76,11 +87,40 @@ fn init_tracing(verbose: u8) {
         .init();
 }
 
-async fn run_tui(_config: Option<std::path::PathBuf>) -> Result<()> {
-    deck_tui::run().await
+fn data_root() -> Result<std::path::PathBuf> {
+    let base = dirs::data_dir()
+        .ok_or_else(|| anyhow::anyhow!("could not resolve XDG_DATA_HOME"))?
+        .join("ono-sendai");
+    std::fs::create_dir_all(&base).context("create data root")?;
+    Ok(base)
 }
 
-fn print_config(_config: Option<std::path::PathBuf>) -> Result<()> {
+fn build_store() -> Result<Arc<dyn Store>> {
+    let path = data_root()?.join("default").join("sessions.db");
+    let store = SqliteStore::open(&path).context("open store")?;
+    Ok(Arc::new(store))
+}
+
+fn build_llm(cfg: &deck_core::config::LlmConfig) -> Result<Arc<dyn LlmBackend>> {
+    let backend: Box<dyn LlmBackend> = deck_llm::from_config(cfg).context("build llm")?;
+    Ok(Arc::from(backend))
+}
+
+async fn run_tui(backend_override: Option<String>) -> Result<()> {
+    let mut cfg = deck_core::Config::default();
+    if let Some(b) = backend_override {
+        cfg.llm.backend = b;
+    }
+    let store = build_store()?;
+    let llm = build_llm(&cfg.llm)?;
+    let runtime = Runtime::spawn(llm, store, cfg.llm.model.clone());
+    let session = SessionId::new();
+    let result = deck_tui::run_with_handle(runtime.handle.clone(), session).await;
+    runtime.shutdown().await;
+    result
+}
+
+fn print_config() -> Result<()> {
     let cfg = deck_core::Config::default();
     println!("{cfg:#?}");
     Ok(())
@@ -91,19 +131,27 @@ async fn run_doctor() -> Result<()> {
     println!("  version    : {}", env!("CARGO_PKG_VERSION"));
     println!("  sandbox    : {}", deck_sandbox::availability());
     println!("  llm        : ollama default endpoint http://127.0.0.1:11434");
-    println!("  mcp        : stdio transport (rmcp)");
-    println!("  store      : sqlite (bundled) + age");
+    println!("  mcp        : stdio transport");
+    println!("  store      : {}", data_root()?.display());
     Ok(())
 }
 
 async fn handle_deck(action: DeckAction) -> Result<()> {
     match action {
         DeckAction::New { name } => {
-            println!("(stub) create deck: {name}");
+            let dir = data_root()?.join(&name);
+            std::fs::create_dir_all(&dir)?;
+            println!("created deck at {}", dir.display());
             Ok(())
         }
         DeckAction::List => {
-            println!("(stub) list decks");
+            let root = data_root()?;
+            for entry in std::fs::read_dir(&root)? {
+                let entry = entry?;
+                if entry.path().is_dir() {
+                    println!("{}", entry.file_name().to_string_lossy());
+                }
+            }
             Ok(())
         }
     }
