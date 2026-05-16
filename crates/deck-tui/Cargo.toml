@@ -1,0 +1,21 @@
+[package]
+name = "deck-tui"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "ratatui-based TUI for ono-sendai"
+
+[lints]
+workspace = true
+
+[dependencies]
+deck-core = { workspace = true }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+crossterm = { workspace = true }
+ratatui = { workspace = true }
+futures = { workspace = true }

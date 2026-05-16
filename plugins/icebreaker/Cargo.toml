@@ -1,0 +1,22 @@
+[package]
+name = "icebreaker-plugin"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "ICEBREAKER — red-team plugin (promptfoo + garak + PyRIT bridge) for ono-sendai"
+
+[lints]
+workspace = true
+
+[lib]
+crate-type = ["rlib"]
+
+[dependencies]
+deck-core = { workspace = true }
+deck-plugin = { workspace = true }
+anyhow = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tracing = { workspace = true }

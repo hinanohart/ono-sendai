@@ -1,0 +1,21 @@
+[package]
+name = "deck-mcp"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "MCP (Model Context Protocol) client with stdio transport for ono-sendai"
+
+[lints]
+workspace = true
+
+[dependencies]
+deck-core = { workspace = true }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+async-trait = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }

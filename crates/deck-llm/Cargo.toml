@@ -1,0 +1,24 @@
+[package]
+name = "deck-llm"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "LLM backend trait + Ollama HTTP implementation for ono-sendai"
+
+[lints]
+workspace = true
+
+[dependencies]
+deck-core = { workspace = true }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+async-trait = { workspace = true }
+futures = { workspace = true }
+tokio = { workspace = true }
+reqwest = { workspace = true }
+tracing = { workspace = true }
+url = { workspace = true }

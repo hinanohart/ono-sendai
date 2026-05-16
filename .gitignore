@@ -1,0 +1,22 @@
+/target
+**/*.rs.bk
+Cargo.lock.bak
+
+# IDE
+/.idea
+/.vscode
+*.swp
+
+# Local data
+/decks
+/.env
+*.age
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Coverage
+/tarpaulin-report.html
+/cobertura.xml
+/lcov.info

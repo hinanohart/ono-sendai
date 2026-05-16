@@ -1,0 +1,24 @@
+[package]
+name = "deck-orchestrator"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Central mpsc hub coordinating LLM/MCP/store/sandbox tasks (ono-sendai)"
+
+[lints]
+workspace = true
+
+[dependencies]
+deck-core = { workspace = true }
+deck-llm = { workspace = true }
+deck-mcp = { workspace = true }
+deck-store = { workspace = true }
+deck-sandbox = { workspace = true }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+futures = { workspace = true }
+async-trait = { workspace = true }

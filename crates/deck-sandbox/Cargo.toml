@@ -1,0 +1,22 @@
+[package]
+name = "deck-sandbox"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "seccomp + landlock sandbox host for untrusted MCP servers (ono-sendai)"
+
+[lints]
+workspace = true
+
+[dependencies]
+deck-core = { workspace = true }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+serde = { workspace = true }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+seccompiler = "0.5"
+landlock = "0.4"

@@ -1,0 +1,21 @@
+[package]
+name = "mesh-plugin"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Mesh — deck-to-deck plugin (iroh + automerge) for ono-sendai. Wired in 1.5."
+
+[lints]
+workspace = true
+
+[lib]
+crate-type = ["rlib"]
+
+[dependencies]
+deck-core = { workspace = true }
+deck-plugin = { workspace = true }
+anyhow = { workspace = true }
+serde = { workspace = true }
+tracing = { workspace = true }

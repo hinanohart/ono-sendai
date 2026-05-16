@@ -1,0 +1,117 @@
+[workspace]
+resolver = "2"
+members = [
+    ".",
+    "crates/deck-core",
+    "crates/deck-llm",
+    "crates/deck-mcp",
+    "crates/deck-store",
+    "crates/deck-tui",
+    "crates/deck-sandbox",
+    "crates/deck-orchestrator",
+    "crates/deck-plugin",
+    "plugins/icebreaker",
+    "plugins/mesh",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.82"
+license = "MIT"
+repository = "https://github.com/runza/ono-sendai"
+homepage = "https://github.com/runza/ono-sendai"
+authors = ["ono-sendai contributors"]
+description = "Console Cowboy deck — a single-binary terminal cyberdeck (TUI + local LLM + MCP + sandbox)"
+keywords = ["tui", "llm", "mcp", "agent", "sandbox"]
+categories = ["command-line-utilities", "development-tools"]
+
+[workspace.dependencies]
+tokio = { version = "1", features = ["full"] }
+anyhow = "1"
+thiserror = "1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+figment = { version = "0.10", features = ["env", "toml"] }
+clap = { version = "4", features = ["derive"] }
+async-trait = "0.1"
+futures = "0.3"
+bytes = "1"
+crossterm = "0.28"
+ratatui = "0.29"
+rusqlite = { version = "0.32", features = ["bundled"] }
+age = "0.11"
+secrecy = "0.10"
+zeroize = "1"
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls", "stream"] }
+url = "2"
+uuid = { version = "1", features = ["v4", "serde"] }
+time = { version = "0.3", features = ["serde", "formatting", "parsing"] }
+once_cell = "1"
+dirs = "5"
+
+deck-core = { path = "crates/deck-core" }
+deck-llm = { path = "crates/deck-llm" }
+deck-mcp = { path = "crates/deck-mcp" }
+deck-store = { path = "crates/deck-store" }
+deck-tui = { path = "crates/deck-tui" }
+deck-sandbox = { path = "crates/deck-sandbox" }
+deck-orchestrator = { path = "crates/deck-orchestrator" }
+deck-plugin = { path = "crates/deck-plugin" }
+
+[workspace.lints.rust]
+unsafe_code = "deny"
+missing_debug_implementations = "warn"
+
+[workspace.lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+nursery = { level = "warn", priority = -1 }
+module_name_repetitions = "allow"
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"
+
+[package]
+name = "ono-sendai"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+authors.workspace = true
+description.workspace = true
+keywords.workspace = true
+categories.workspace = true
+readme = "README.md"
+
+[[bin]]
+name = "ono-sendai"
+path = "src/main.rs"
+
+[dependencies]
+tokio = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+clap = { workspace = true }
+deck-core = { workspace = true }
+deck-tui = { workspace = true }
+deck-orchestrator = { workspace = true }
+deck-llm = { workspace = true }
+deck-mcp = { workspace = true }
+deck-store = { workspace = true }
+deck-sandbox = { workspace = true }
+deck-plugin = { workspace = true }
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = "symbols"
+panic = "abort"
+opt-level = 3
+
+[profile.dev]
+opt-level = 0
+debug = true
