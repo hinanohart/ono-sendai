@@ -5,7 +5,7 @@ edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "Encrypted (age) SQLite session store for ono-sendai"
+description = "SQLite session store for ono-sendai (age encryption planned for 0.2)"
 
 [lints]
 workspace = true

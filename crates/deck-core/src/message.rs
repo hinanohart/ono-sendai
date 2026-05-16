@@ -35,6 +35,34 @@ pub enum Role {
     Tool,
 }
 
+impl Role {
+    /// Canonical wire string. Single source of truth for any code path
+    /// that talks to an LLM HTTP API or persists messages.
+    #[must_use]
+    pub const fn as_wire_str(self) -> &'static str {
+        match self {
+            Self::System => "system",
+            Self::User => "user",
+            Self::Assistant => "assistant",
+            Self::Tool => "tool",
+        }
+    }
+
+    /// Parse the canonical wire string back into a `Role`. Returns
+    /// `None` for unknown values — callers must decide whether to error
+    /// or default; we deliberately do NOT silently coerce.
+    #[must_use]
+    pub fn from_wire_str(s: &str) -> Option<Self> {
+        Some(match s {
+            "system" => Self::System,
+            "user" => Self::User,
+            "assistant" => Self::Assistant,
+            "tool" => Self::Tool,
+            _ => return None,
+        })
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Message {
     pub role: Role,

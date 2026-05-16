@@ -118,6 +118,7 @@ tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 clap = { workspace = true }
 dirs = { workspace = true }
+figment = { workspace = true }
 deck-core = { workspace = true }
 deck-tui = { workspace = true }
 deck-orchestrator = { workspace = true }

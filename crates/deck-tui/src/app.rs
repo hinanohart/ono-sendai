@@ -26,9 +26,9 @@ impl App {
     #[must_use]
     pub fn new(handle: Option<AppHandle>) -> Self {
         let banner = if handle.is_some() {
-            "// ono-sendai online. LLM connected. type `:q` to exit.".to_owned()
+            "// jacked in. LLM connected. cyberspace is a consensual hallucination.".to_owned()
         } else {
-            "// ono-sendai offline-only mode (no LLM). `:q` to exit.".to_owned()
+            "// flatlined — offline. no LLM. type `:q` to log out.".to_owned()
         };
         Self {
             input: String::new(),

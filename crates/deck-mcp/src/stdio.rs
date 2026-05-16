@@ -4,6 +4,7 @@
 
 use std::process::Stdio;
 use std::sync::atomic::{AtomicU64, Ordering};
+use std::time::Duration;
 
 use async_trait::async_trait;
 use deck_core::traits::ToolDescriptor;
@@ -16,6 +17,10 @@ use tracing::{debug, warn};
 
 use crate::wire::{make_request, JsonRpcResponse};
 
+/// Default per-RPC timeout. A hanging server cannot stall the
+/// orchestrator forever.
+const RPC_TIMEOUT: Duration = Duration::from_secs(30);
+
 pub struct StdioMcpClient {
     name: String,
     next_id: AtomicU64,
@@ -23,6 +28,8 @@ pub struct StdioMcpClient {
 }
 
 struct Inner {
+    /// Held only to keep the child alive — `tokio::process::Child` kills
+    /// the subprocess on drop. The field is read by `Drop`, not by us.
     _child: Child,
     stdin: ChildStdin,
     stdout: BufReader<ChildStdout>,
@@ -105,11 +112,10 @@ impl StdioMcpClient {
             .await
             .map_err(|e| DeckError::Mcp(format!("flush: {e}")))?;
         let mut buf = String::new();
-        let n = inner
-            .stdout
-            .read_line(&mut buf)
+        let read = tokio::time::timeout(RPC_TIMEOUT, inner.stdout.read_line(&mut buf))
             .await
-            .map_err(|e| DeckError::Mcp(format!("read: {e}")))?;
+            .map_err(|_| DeckError::Mcp(format!("rpc timeout after {}s", RPC_TIMEOUT.as_secs())))?;
+        let n = read.map_err(|e| DeckError::Mcp(format!("read: {e}")))?;
         if n == 0 {
             return Err(DeckError::Mcp("server closed pipe".into()));
         }

@@ -1,16 +1,21 @@
 //! ono-sendai — Console Cowboy deck
 //!
-//! Single-binary terminal cyberdeck: TUI (ratatui) + local LLM (ollama/mock)
-//! + MCP client (rmcp) + age-encrypted local context store + seccomp/landlock
-//! sandbox for untrusted MCP servers. No telemetry, no cloud dependency.
+//! Single-binary terminal cyberdeck: TUI (ratatui) + local LLM
+//! (ollama HTTP / mock) + MCP client (stdio JSON-RPC) + local SQLite
+//! session store (age encryption planned for 0.2) + a `deck-sandbox`
+//! crate that will (in 0.2) enforce seccomp + landlock policies around
+//! every untrusted MCP server. No telemetry, no cloud dependency.
 
+use std::path::Path;
 use std::sync::Arc;
 
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
-use deck_core::{LlmBackend, SessionId, Store};
+use deck_core::{Config, LlmBackend, SessionId, Store};
 use deck_orchestrator::Runtime;
 use deck_store::SqliteStore;
+use figment::providers::{Env, Format, Serialized, Toml};
+use figment::Figment;
 use tracing::info;
 use tracing_subscriber::EnvFilter;
 
@@ -41,7 +46,7 @@ enum Command {
     Config,
     /// Show backend / sandbox / store diagnostics
     Doctor,
-    /// Manage decks (encrypted context vaults)
+    /// Manage decks (per-deck context directories — age encryption in 0.2)
     Deck {
         #[command(subcommand)]
         action: DeckAction,
@@ -50,7 +55,7 @@ enum Command {
 
 #[derive(Subcommand, Debug)]
 enum DeckAction {
-    /// Create a new encrypted deck
+    /// Create a new deck directory (age encryption planned 0.2)
     New { name: String },
     /// List known decks
     List,
@@ -62,11 +67,12 @@ async fn main() -> Result<()> {
     init_tracing(cli.verbose);
     info!(version = env!("CARGO_PKG_VERSION"), "ono-sendai starting");
 
+    let config_path = cli.config.take();
     let backend_override = cli.backend.take();
     let cmd = cli.command.take().unwrap_or(Command::Run);
     match cmd {
-        Command::Run => run_tui(backend_override).await,
-        Command::Config => print_config(),
+        Command::Run => run_tui(config_path, backend_override).await,
+        Command::Config => print_config(config_path),
         Command::Doctor => run_doctor().await,
         Command::Deck { action } => handle_deck(action).await,
     }
@@ -106,8 +112,11 @@ fn build_llm(cfg: &deck_core::config::LlmConfig) -> Result<Arc<dyn LlmBackend>> 
     Ok(Arc::from(backend))
 }
 
-async fn run_tui(backend_override: Option<String>) -> Result<()> {
-    let mut cfg = deck_core::Config::default();
+async fn run_tui(
+    config_path: Option<std::path::PathBuf>,
+    backend_override: Option<String>,
+) -> Result<()> {
+    let mut cfg = load_config(config_path.as_deref())?;
     if let Some(b) = backend_override {
         cfg.llm.backend = b;
     }
@@ -120,8 +129,28 @@ async fn run_tui(backend_override: Option<String>) -> Result<()> {
     result
 }
 
-fn print_config() -> Result<()> {
-    let cfg = deck_core::Config::default();
+/// Resolve the effective configuration, in this precedence:
+///   1. environment variables (`ONOSENDAI_*`, double-underscore for nesting)
+///   2. CLI-supplied config file path (if any)
+///   3. `$XDG_CONFIG_HOME/ono-sendai/config.toml` if it exists
+///   4. compiled-in defaults
+fn load_config(cli_path: Option<&Path>) -> Result<Config> {
+    let mut figment = Figment::from(Serialized::defaults(Config::default()));
+    if let Some(p) = cli_path {
+        figment = figment.merge(Toml::file(p));
+    } else if let Some(default_path) =
+        dirs::config_dir().map(|d| d.join("ono-sendai").join("config.toml"))
+    {
+        if default_path.exists() {
+            figment = figment.merge(Toml::file(default_path));
+        }
+    }
+    figment = figment.merge(Env::prefixed("ONOSENDAI_").split("__"));
+    figment.extract().context("config resolution")
+}
+
+fn print_config(config_path: Option<std::path::PathBuf>) -> Result<()> {
+    let cfg = load_config(config_path.as_deref())?;
     println!("{cfg:#?}");
     Ok(())
 }
@@ -129,10 +158,17 @@ fn print_config() -> Result<()> {
 async fn run_doctor() -> Result<()> {
     println!("ono-sendai doctor");
     println!("  version    : {}", env!("CARGO_PKG_VERSION"));
-    println!("  sandbox    : {}", deck_sandbox::availability());
-    println!("  llm        : ollama default endpoint http://127.0.0.1:11434");
-    println!("  mcp        : stdio transport");
-    println!("  store      : {}", data_root()?.display());
+    println!(
+        "  sandbox    : {} (enforces = {})",
+        deck_sandbox::availability(),
+        deck_sandbox::enforces()
+    );
+    println!("  llm        : ollama HTTP / mock (overridable with --backend)");
+    println!("  mcp        : stdio JSON-RPC 2.0");
+    println!(
+        "  store      : plaintext SQLite at {} (age encryption planned 0.2)",
+        data_root()?.display()
+    );
     Ok(())
 }
 

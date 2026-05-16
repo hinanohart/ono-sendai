@@ -30,15 +30,17 @@ impl LinuxSandbox {
 
 impl Sandbox for LinuxSandbox {
     fn availability(&self) -> &'static str {
-        "seccomp+landlock"
+        "scaffolded (not enforcing in 0.1)"
     }
 
     fn enforces(&self) -> bool {
-        // Detecting actual kernel support requires probing landlock at
-        // runtime (`landlock_create_ruleset(NULL, 0, LANDLOCK_CREATE_RULESET_VERSION)`).
-        // For Phase 1 we conservatively report true on linux; Phase 2 adds
-        // the probe so we can downgrade gracefully on old kernels.
-        true
+        // 0.1 ships the policy types and the dependency wiring but does
+        // NOT yet apply the seccomp BPF filter or the landlock ruleset
+        // around `exec(2)`. Reporting `false` keeps `doctor` honest and
+        // gives `--sandbox-strict` the correct refusal behaviour. The
+        // fork+exec helper + `landlock_create_ruleset(NULL, 0, ...)`
+        // probe land in 0.2.
+        false
     }
 }
 

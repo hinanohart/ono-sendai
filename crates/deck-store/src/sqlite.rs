@@ -56,12 +56,7 @@ impl SqliteStore {
 #[async_trait]
 impl Store for SqliteStore {
     async fn append(&self, session: SessionId, msg: &Message) -> Result<()> {
-        let role = match msg.role {
-            deck_core::Role::System => "system",
-            deck_core::Role::User => "user",
-            deck_core::Role::Assistant => "assistant",
-            deck_core::Role::Tool => "tool",
-        };
+        let role = msg.role.as_wire_str();
         let tool_calls = serde_json::to_string(&msg.tool_calls)?;
         let content = msg.content.clone();
         let session_str = session.to_string();
@@ -112,13 +107,12 @@ impl Store for SqliteStore {
             let mut out = Vec::new();
             for r in rows {
                 let (role, content, tc) = r.map_err(|e| DeckError::Store(format!("row: {e}")))?;
-                let role = match role.as_str() {
-                    "system" => deck_core::Role::System,
-                    "user" => deck_core::Role::User,
-                    "tool" => deck_core::Role::Tool,
-                    _ => deck_core::Role::Assistant,
-                };
-                let tool_calls = serde_json::from_str(&tc).unwrap_or_default();
+                let role = deck_core::Role::from_wire_str(&role).ok_or_else(|| {
+                    DeckError::Store(format!("unknown role variant in store: {role}"))
+                })?;
+                let tool_calls = serde_json::from_str(&tc).map_err(|e| {
+                    DeckError::Store(format!("tool_calls decode in store: {e}"))
+                })?;
                 out.push(Message {
                     role,
                     content,

@@ -1,8 +1,14 @@
 //! Ollama HTTP backend. Talks to a local daemon at `http://127.0.0.1:11434`
 //! by default. Streaming is line-delimited JSON over a POST to `/api/chat`.
+//!
+//! The streaming decoder buffers TCP chunks and splits on `\n` before
+//! attempting to parse each line — Ollama can pack multiple JSON objects
+//! into one TCP chunk, or split one object across two chunks, and a naïve
+//! `serde_json::from_str` on each `bytes_stream()` item silently corrupts.
 
 use std::time::Duration;
 
+use async_stream::try_stream;
 use async_trait::async_trait;
 use deck_core::{DeckError, LlmBackend, Message, Result, Role};
 use futures::stream::{BoxStream, StreamExt};
@@ -17,13 +23,15 @@ pub struct OllamaBackend {
 }
 
 impl OllamaBackend {
-    #[must_use]
-    pub fn new(endpoint: String, timeout: Duration) -> Self {
+    /// Build an Ollama client. Returns an error if reqwest fails to
+    /// initialize (broken system roots, missing entropy, etc.) so a
+    /// transient TLS-init failure does not become a process abort.
+    pub fn new(endpoint: String, timeout: Duration) -> Result<Self> {
         let client = Client::builder()
             .timeout(timeout)
             .build()
-            .expect("reqwest client init");
-        Self { endpoint, client }
+            .map_err(|e| DeckError::Llm(format!("reqwest client init: {e}")))?;
+        Ok(Self { endpoint, client })
     }
 }
 
@@ -43,23 +51,13 @@ struct WireMessage {
 #[derive(Deserialize)]
 struct ChatResponse {
     message: WireMessage,
-    #[allow(dead_code)]
     #[serde(default)]
     done: bool,
 }
 
-const fn wire_role(role: Role) -> &'static str {
-    match role {
-        Role::System => "system",
-        Role::User => "user",
-        Role::Assistant => "assistant",
-        Role::Tool => "tool",
-    }
-}
-
 fn to_wire(m: &Message) -> WireMessage {
     WireMessage {
-        role: wire_role(m.role).into(),
+        role: m.role.as_wire_str().into(),
         content: m.content.clone(),
     }
 }
@@ -117,27 +115,43 @@ impl LlmBackend for OllamaBackend {
             .map_err(|e| DeckError::Llm(e.to_string()))?
             .error_for_status()
             .map_err(|e| DeckError::Llm(e.to_string()))?;
-        let byte_stream = resp.bytes_stream().map(|chunk| {
-            let chunk = chunk.map_err(|e| DeckError::Llm(e.to_string()))?;
-            let line = std::str::from_utf8(&chunk)
-                .map_err(|e| DeckError::Llm(format!("non-utf8 chunk: {e}")))?
-                .trim()
-                .to_owned();
-            if line.is_empty() {
-                return Ok(Message {
-                    role: Role::Assistant,
-                    content: String::new(),
-                    tool_calls: vec![],
-                });
+
+        let s = try_stream! {
+            let mut bytes = resp.bytes_stream();
+            let mut buf = String::new();
+            while let Some(chunk) = bytes.next().await {
+                let chunk = chunk.map_err(|e| DeckError::Llm(e.to_string()))?;
+                let s = std::str::from_utf8(&chunk)
+                    .map_err(|e| DeckError::Llm(format!("non-utf8 chunk: {e}")))?;
+                buf.push_str(s);
+                while let Some(nl) = buf.find('\n') {
+                    let line: String = buf.drain(..=nl).collect();
+                    let trimmed = line.trim();
+                    if trimmed.is_empty() {
+                        continue;
+                    }
+                    let parsed: ChatResponse = serde_json::from_str(trimmed)?;
+                    yield Message {
+                        role: Role::Assistant,
+                        content: parsed.message.content,
+                        tool_calls: vec![],
+                    };
+                    if parsed.done {
+                        return;
+                    }
+                }
             }
-            let parsed: ChatResponse = serde_json::from_str(&line)?;
-            Ok(Message {
-                role: Role::Assistant,
-                content: parsed.message.content,
-                tool_calls: vec![],
-            })
-        });
-        Ok(byte_stream.boxed())
+            let tail = buf.trim();
+            if !tail.is_empty() {
+                let parsed: ChatResponse = serde_json::from_str(tail)?;
+                yield Message {
+                    role: Role::Assistant,
+                    content: parsed.message.content,
+                    tool_calls: vec![],
+                };
+            }
+        };
+        Ok(s.boxed())
     }
 }
 
@@ -147,7 +161,8 @@ mod tests {
 
     #[test]
     fn id_includes_endpoint() {
-        let b = OllamaBackend::new("http://localhost:11434".into(), Duration::from_secs(10));
+        let b = OllamaBackend::new("http://localhost:11434".into(), Duration::from_secs(10))
+            .expect("client init in test");
         assert!(b.id().contains("11434"));
     }
 }

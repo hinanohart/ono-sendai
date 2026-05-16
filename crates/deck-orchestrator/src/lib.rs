@@ -106,23 +106,38 @@ async fn run_loop(
         match cmd {
             Command::Shutdown => break,
             Command::UserMessage { session, content } => {
-                if let Err(e) = handle_user_message(
-                    &events_tx,
-                    llm.as_ref(),
-                    store.as_ref(),
-                    &model,
-                    session,
-                    content,
-                )
-                .await
-                {
-                    let _ = events_tx.send(Event::Error {
-                        message: e.to_string(),
-                    });
-                }
+                // Per-session spawn so a slow LLM stream on one session
+                // does not head-of-line block commands on other sessions
+                // (and so we do not hold the dispatcher across the
+                // entire `await` chain).
+                let events_tx = events_tx.clone();
+                let llm = llm.clone();
+                let store = store.clone();
+                let model = model.clone();
+                tokio::spawn(async move {
+                    if let Err(e) = handle_user_message(
+                        &events_tx,
+                        llm.as_ref(),
+                        store.as_ref(),
+                        &model,
+                        session,
+                        content,
+                    )
+                    .await
+                    {
+                        let _ = events_tx.send(Event::Error {
+                            message: e.to_string(),
+                        });
+                    }
+                });
             }
             Command::ApproveTool { call_id } | Command::DenyTool { call_id } => {
-                warn!(call_id, "tool approval not wired in Phase 2");
+                warn!(call_id, "tool approval not wired in 0.1");
+                let _ = events_tx.send(Event::Error {
+                    message: format!(
+                        "tool approval is not yet implemented in 0.1 (call_id={call_id})"
+                    ),
+                });
             }
         }
     }

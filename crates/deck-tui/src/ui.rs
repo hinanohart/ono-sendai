@@ -20,8 +20,10 @@ pub fn draw(f: &mut Frame, app: &App) {
         ])
         .split(f.area());
 
-    let title = Paragraph::new(Line::from("─── ono-sendai ─── Console Cowboy deck ───"))
-        .style(Style::default().add_modifier(Modifier::BOLD));
+    let title = Paragraph::new(Line::from(
+        "// ono-sendai · console cowboy deck · cyberspace 7 //",
+    ))
+    .style(Style::default().add_modifier(Modifier::BOLD));
     f.render_widget(title, chunks[0]);
 
     let log_text: Vec<Line> = app.log.iter().map(|l| Line::from(l.clone())).collect();

@@ -17,10 +17,13 @@ use deck_core::LlmBackend;
 /// Errors if the backend identifier is unknown.
 pub fn from_config(cfg: &deck_core::config::LlmConfig) -> deck_core::Result<Box<dyn LlmBackend>> {
     match cfg.backend.as_str() {
-        "ollama" => Ok(Box::new(OllamaBackend::new(
-            cfg.endpoint.clone(),
-            std::time::Duration::from_secs(cfg.timeout_secs),
-        ))),
+        "ollama" => {
+            let b = OllamaBackend::new(
+                cfg.endpoint.clone(),
+                std::time::Duration::from_secs(cfg.timeout_secs),
+            )?;
+            Ok(Box::new(b))
+        }
         "mock" => Ok(Box::new(MockBackend::default())),
         other => Err(deck_core::DeckError::Llm(format!(
             "unknown backend: {other}"
