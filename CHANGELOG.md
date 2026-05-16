@@ -32,4 +32,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - `wasmtime` plugin loader will land in `0.2`; today `deck-plugin`
   only owns the manifest + capability types.
 
-[Unreleased]: https://github.com/runza/ono-sendai/compare/v0.0.0...HEAD
+[Unreleased]: https://github.com/hinanohart/ono-sendai/compare/v0.0.0...HEAD
