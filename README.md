@@ -28,8 +28,11 @@ The mock backend streams a deterministic echo, so a fresh checkout boots
 the full TUI without Ollama:
 
 ```
-cargo run --release -- --backend mock run
+cargo run -- --backend mock run
 ```
+
+(`--release` works too but the debug build starts faster on a cold
+checkout.)
 
 Type a line, hit Enter, watch the mock reply stream in. `:q` exits.
 
@@ -41,7 +44,7 @@ Type a line, hit Enter, watch the mock reply stream in. `:q` exits.
 | aider                      | Git-centric, no MCP host                           |
 | Continue, Codeium          | IDE plugin, not a deck                             |
 | Ollama UIs (Web)           | Browser-bound, no sandbox for tool execution       |
-| **ono-sendai**             | **TUI + local LLM + MCP + sandboxed tool host**    |
+| **ono-sendai**             | **TUI + local LLM + MCP + sandbox host (enforce 0.2)** |
 
 The planned differentiator is the *sandbox*: in 0.2, every MCP tool call
 from an untrusted server will be dispatched through `deck-sandbox`

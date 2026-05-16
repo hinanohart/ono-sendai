@@ -1,10 +1,10 @@
 //! ono-sendai — Console Cowboy deck
 //!
-//! Single-binary terminal cyberdeck: TUI (ratatui) + local LLM
-//! (ollama HTTP / mock) + MCP client (stdio JSON-RPC) + local SQLite
-//! session store (age encryption planned for 0.2) + a `deck-sandbox`
-//! crate that will (in 0.2) enforce seccomp + landlock policies around
-//! every untrusted MCP server. No telemetry, no cloud dependency.
+//! Single-binary terminal cyberdeck: TUI (`ratatui`) + local LLM
+//! (`ollama` HTTP / mock) + MCP client (stdio JSON-RPC) + local `SQLite`
+//! session store (`age` encryption planned for 0.2) + a `deck-sandbox`
+//! crate that will (in 0.2) enforce `seccomp` + `landlock` policies
+//! around every untrusted MCP server. No telemetry, no cloud dependency.
 
 use std::path::Path;
 use std::sync::Arc;

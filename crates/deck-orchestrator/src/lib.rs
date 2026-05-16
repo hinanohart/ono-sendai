@@ -10,6 +10,7 @@ use std::sync::Arc;
 use deck_core::{LlmBackend, Message, Role, SessionId, Store, ToolCall, ToolResult};
 use futures::StreamExt;
 use tokio::sync::{broadcast, mpsc};
+use tokio::task::JoinSet;
 use tracing::{error, warn};
 
 #[derive(Debug, Clone)]
@@ -102,45 +103,59 @@ async fn run_loop(
     store: Arc<dyn Store>,
     model: String,
 ) {
-    while let Some(cmd) = commands_rx.recv().await {
-        match cmd {
-            Command::Shutdown => break,
-            Command::UserMessage { session, content } => {
-                // Per-session spawn so a slow LLM stream on one session
-                // does not head-of-line block commands on other sessions
-                // (and so we do not hold the dispatcher across the
-                // entire `await` chain).
-                let events_tx = events_tx.clone();
-                let llm = llm.clone();
-                let store = store.clone();
-                let model = model.clone();
-                tokio::spawn(async move {
-                    if let Err(e) = handle_user_message(
-                        &events_tx,
-                        llm.as_ref(),
-                        store.as_ref(),
-                        &model,
-                        session,
-                        content,
-                    )
-                    .await
-                    {
-                        let _ = events_tx.send(Event::Error {
-                            message: e.to_string(),
+    // In-flight per-session tasks. JoinSet so `Shutdown` can drain them
+    // instead of leaving writes to `store` racing against process exit.
+    let mut in_flight: JoinSet<()> = JoinSet::new();
+    loop {
+        tokio::select! {
+            cmd = commands_rx.recv() => {
+                match cmd {
+                    None | Some(Command::Shutdown) => break,
+                    Some(Command::UserMessage { session, content }) => {
+                        // Per-session spawn so a slow LLM stream on one
+                        // session does not head-of-line block commands on
+                        // other sessions (and so we do not hold the
+                        // dispatcher across the entire `await` chain).
+                        let events_tx = events_tx.clone();
+                        let llm = llm.clone();
+                        let store = store.clone();
+                        let model = model.clone();
+                        in_flight.spawn(async move {
+                            if let Err(e) = handle_user_message(
+                                &events_tx,
+                                llm.as_ref(),
+                                store.as_ref(),
+                                &model,
+                                session,
+                                content,
+                            )
+                            .await
+                            {
+                                let _ = events_tx.send(Event::Error {
+                                    message: e.to_string(),
+                                });
+                            }
                         });
                     }
-                });
+                    Some(Command::ApproveTool { call_id } | Command::DenyTool { call_id }) => {
+                        warn!(call_id, "tool approval not wired in 0.1");
+                        let _ = events_tx.send(Event::Error {
+                            message: format!(
+                                "tool approval is not yet implemented in 0.1 (call_id={call_id})"
+                            ),
+                        });
+                    }
+                }
             }
-            Command::ApproveTool { call_id } | Command::DenyTool { call_id } => {
-                warn!(call_id, "tool approval not wired in 0.1");
-                let _ = events_tx.send(Event::Error {
-                    message: format!(
-                        "tool approval is not yet implemented in 0.1 (call_id={call_id})"
-                    ),
-                });
-            }
+            // Reap completed in-flight tasks so the JoinSet does not grow
+            // unboundedly during a long session. We don't care about
+            // individual task results here — errors already emit Event::Error.
+            Some(_done) = in_flight.join_next(), if !in_flight.is_empty() => {}
         }
     }
+    // Drain any remaining in-flight per-session tasks before returning,
+    // so `Runtime::shutdown` is genuinely graceful.
+    while in_flight.join_next().await.is_some() {}
 }
 
 async fn handle_user_message(

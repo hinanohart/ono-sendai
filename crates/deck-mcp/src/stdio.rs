@@ -3,7 +3,7 @@
 //! to keep request/response ordering deterministic.
 
 use std::process::Stdio;
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::time::Duration;
 
 use async_trait::async_trait;
@@ -24,6 +24,11 @@ const RPC_TIMEOUT: Duration = Duration::from_secs(30);
 pub struct StdioMcpClient {
     name: String,
     next_id: AtomicU64,
+    /// Set when an RPC times out — the wire is desynced (the server may
+    /// still deliver the late response, which the next caller would read
+    /// in place of its own). We refuse all subsequent requests on a
+    /// poisoned client so id/response pairing cannot drift.
+    poisoned: AtomicBool,
     inner: Mutex<Inner>,
 }
 
@@ -63,6 +68,7 @@ impl StdioMcpClient {
         let me = Self {
             name: name.into(),
             next_id: AtomicU64::new(1),
+            poisoned: AtomicBool::new(false),
             inner: Mutex::new(Inner {
                 _child: child,
                 stdin,
@@ -93,6 +99,12 @@ impl StdioMcpClient {
         method: &str,
         params: Option<serde_json::Value>,
     ) -> Result<JsonRpcResponse> {
+        if self.poisoned.load(Ordering::Acquire) {
+            return Err(DeckError::Mcp(format!(
+                "client `{}` is poisoned after a prior timeout — drop it and respawn",
+                self.name
+            )));
+        }
         let id = self.next_id.fetch_add(1, Ordering::Relaxed);
         let line = make_request(id, method, params);
         let mut inner = self.inner.lock().await;
@@ -112,9 +124,17 @@ impl StdioMcpClient {
             .await
             .map_err(|e| DeckError::Mcp(format!("flush: {e}")))?;
         let mut buf = String::new();
-        let read = tokio::time::timeout(RPC_TIMEOUT, inner.stdout.read_line(&mut buf))
-            .await
-            .map_err(|_| DeckError::Mcp(format!("rpc timeout after {}s", RPC_TIMEOUT.as_secs())))?;
+        let Ok(read) = tokio::time::timeout(RPC_TIMEOUT, inner.stdout.read_line(&mut buf)).await
+        else {
+            // Wire is now desynced: the server may still deliver the
+            // late response. Poison the client so subsequent calls
+            // refuse rather than read out-of-order.
+            self.poisoned.store(true, Ordering::Release);
+            return Err(DeckError::Mcp(format!(
+                "rpc timeout after {}s; client poisoned",
+                RPC_TIMEOUT.as_secs()
+            )));
+        };
         let n = read.map_err(|e| DeckError::Mcp(format!("read: {e}")))?;
         if n == 0 {
             return Err(DeckError::Mcp("server closed pipe".into()));

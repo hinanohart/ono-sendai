@@ -8,10 +8,16 @@ surface area is changing fast, but issues and small PRs are welcome.
 - **License**: contributions are accepted under MIT. The project will
   not accept GPL-3, AGPL, or non-commercial licensed code; CI rejects
   such dependencies via `deny.toml`.
+- **Authorship**: published crates list `authors = ["ono-sendai
+  contributors"]` as a collective identity. Individual authorship lives
+  in the git history. We don't run DCO sign-off (yet).
 - **Style**: `cargo fmt` and `cargo clippy --workspace --all-targets -- -D warnings`
   must be clean. CI enforces both.
-- **Tests**: new code paths need a unit test. Integration tests live
-  under `tests/`.
+- **Tests**: new code paths need a unit test alongside the code (each
+  `deck-*` crate keeps its own `#[cfg(test)] mod tests`). Workspace-
+  level integration tests are not used in 0.1; if you need one, put it
+  under the relevant crate's `tests/` directory and gate it with
+  `#[cfg(feature = "integration")]`.
 - **Commit messages**: imperative present-tense subject ≤72 chars, body
   optional. Reference issues by number, not by internal rule numbers.
 
