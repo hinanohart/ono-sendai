@@ -39,7 +39,7 @@ clap = { version = "4", features = ["derive"] }
 async-trait = "0.1"
 futures = "0.3"
 bytes = "1"
-crossterm = "0.28"
+crossterm = "0.29"
 ratatui = "0.29"
 rusqlite = { version = "0.32", features = ["bundled"] }
 age = "0.11"
