@@ -1,0 +1,26 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "Console Cowboy deck — pre-alpha Rust workspace for an offline-first terminal TUI"
+authors:
+  - family-names: "Hart"
+    given-names: "Hinano"
+    alias: "hinanohart"
+type: software
+license: "NOASSERTION"
+repository-code: "https://github.com/hinanohart/ono-sendai"
+url: "https://crates.io/crates/ono-sendai"
+version: "0.1.1"
+date-released: "2026-05-16"
+keywords:
+  - "agent"
+  - "cyberdeck"
+  - "llm"
+  - "mcp"
+  - "neuromancer"
+  - "offline-first"
+  - "ollama"
+  - "ratatui"
+  - "rust"
+  - "sandbox"
+  - "seccomp"
+  - "tui"
