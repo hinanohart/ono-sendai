@@ -24,4 +24,4 @@ dirs = { workspace = true }
 figment = { workspace = true }
 
 [dev-dependencies]
-toml = "0.8"
+toml = "1.1"
