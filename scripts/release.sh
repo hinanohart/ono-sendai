@@ -23,6 +23,9 @@
 #   ./scripts/release.sh --skip-publish     # tag + GH release only,
 #                                           # skip crates.io
 #   ./scripts/release.sh --skip-community   # do not touch .github/
+#   ./scripts/release.sh --skip-dry-run     # bypass Phase 4 (use when
+#                                           # path-dep crates have not
+#                                           # been published yet)
 #
 # Exit codes:
 #   0  success (or dry-run completed)
@@ -60,6 +63,7 @@ PUBLISH_ORDER=(
 EXECUTE=0
 SKIP_PUBLISH=0
 SKIP_COMMUNITY=0
+SKIP_DRY_RUN=0
 BUMP_VERSION=""
 
 while [[ $# -gt 0 ]]; do
@@ -67,6 +71,7 @@ while [[ $# -gt 0 ]]; do
     --execute) EXECUTE=1; shift ;;
     --skip-publish) SKIP_PUBLISH=1; shift ;;
     --skip-community) SKIP_COMMUNITY=1; shift ;;
+    --skip-dry-run) SKIP_DRY_RUN=1; shift ;;
     -h|--help)
       sed -n '2,40p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
       exit 0
@@ -235,16 +240,21 @@ ok "local gate green"
 # -----------------------------------------------------------------------------
 
 if [[ $SKIP_PUBLISH -eq 0 ]]; then
-  step "Phase 4: cargo publish --dry-run for each crate (topological)"
-  for crate_path in "${PUBLISH_ORDER[@]}"; do
-    info "dry-run: $crate_path"
-    if [[ "$crate_path" == "." ]]; then
-      run cargo publish --dry-run --allow-dirty
-    else
-      run cargo publish --dry-run --allow-dirty --manifest-path "$crate_path/Cargo.toml"
-    fi
-  done
-  ok "all dry-runs passed"
+  if [[ $SKIP_DRY_RUN -eq 1 ]]; then
+    info "(skipping Phase 4 dry-run per --skip-dry-run)"
+  else
+    step "Phase 4: cargo publish --dry-run for deck-core (path-dep free)"
+    # NOTE: cargo publish --dry-run resolves path dependencies against
+    # the crates.io index, not the workspace path. For any crate that
+    # depends on another deck-* crate (everything except deck-core),
+    # the dry-run *will* fail with "no matching package" until the
+    # upstream is on crates.io. Phase 7 publishes in topological order
+    # with index polling, so production publish is fine. We only
+    # dry-run deck-core (which has no deck-* deps) as a sanity check;
+    # pass --skip-dry-run to bypass entirely on a re-run.
+    run cargo publish --dry-run --allow-dirty --manifest-path crates/deck-core/Cargo.toml
+    ok "deck-core dry-run passed; rest will be verified live in Phase 7"
+  fi
 else
   info "(skipping crates.io dry-run per --skip-publish)"
 fi
