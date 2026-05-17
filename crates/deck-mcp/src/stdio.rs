@@ -140,6 +140,16 @@ impl StdioMcpClient {
             return Err(DeckError::Mcp("server closed pipe".into()));
         }
         let resp: JsonRpcResponse = serde_json::from_str(buf.trim())?;
+        // Pair response to request. An unsolicited server notification or
+        // out-of-order reply would otherwise be returned to the wrong
+        // caller — desync the wire to be safe.
+        if resp.id != Some(id) {
+            self.poisoned.store(true, Ordering::Release);
+            return Err(DeckError::Mcp(format!(
+                "rpc id mismatch (sent {id}, got {:?}); client poisoned",
+                resp.id
+            )));
+        }
         if let Some(err) = &resp.error {
             warn!(code = err.code, msg = %err.message, "mcp jsonrpc error");
             return Err(DeckError::Mcp(format!(

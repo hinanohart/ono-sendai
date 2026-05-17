@@ -6,6 +6,7 @@ rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
 description = "ICEBREAKER — red-team plugin (promptfoo + garak + PyRIT bridge) for ono-sendai"
+publish = false
 
 [lints]
 workspace = true

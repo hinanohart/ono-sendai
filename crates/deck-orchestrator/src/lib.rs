@@ -61,8 +61,14 @@ impl std::fmt::Debug for Handle {
 }
 
 impl Handle {
-    pub async fn submit(&self, cmd: Command) -> Result<(), mpsc::error::SendError<Command>> {
-        self.commands_tx.send(cmd).await
+    /// Submit a command to the orchestrator. Returns an error if the
+    /// orchestrator task has shut down. Wraps the channel-specific error
+    /// type so the channel implementation stays an internal detail.
+    pub async fn submit(&self, cmd: Command) -> deck_core::Result<()> {
+        self.commands_tx
+            .send(cmd)
+            .await
+            .map_err(|_| deck_core::DeckError::Orchestrator("runtime stopped".into()))
     }
 
     #[must_use]

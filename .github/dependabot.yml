@@ -1,0 +1,26 @@
+version: 2
+updates:
+  - package-ecosystem: "cargo"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    groups:
+      tokio-stack:
+        patterns:
+          - "tokio"
+          - "tokio-*"
+      tracing-stack:
+        patterns:
+          - "tracing"
+          - "tracing-*"
+      serde-stack:
+        patterns:
+          - "serde"
+          - "serde_*"
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 3

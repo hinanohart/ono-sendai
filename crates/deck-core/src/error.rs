@@ -20,6 +20,9 @@ pub enum DeckError {
     #[error("sandbox: {0}")]
     Sandbox(String),
 
+    #[error("orchestrator: {0}")]
+    Orchestrator(String),
+
     #[error("io: {0}")]
     Io(#[from] std::io::Error),
 

@@ -6,6 +6,7 @@ rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
 description = "Mesh — deck-to-deck plugin (iroh + automerge) for ono-sendai. Wired in 1.5."
+publish = false
 
 [lints]
 workspace = true

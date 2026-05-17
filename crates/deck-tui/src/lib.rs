@@ -7,9 +7,9 @@ mod app;
 mod event;
 mod ui;
 
-use std::io;
+use std::io::{self, IsTerminal, Stdout};
 
-use anyhow::Result;
+use anyhow::{bail, Context, Result};
 use crossterm::event::{DisableMouseCapture, EnableMouseCapture};
 use crossterm::execute;
 use crossterm::terminal::{
@@ -34,21 +34,54 @@ pub async fn run_with_handle(handle: Handle, session: deck_core::SessionId) -> R
     run_with(&mut app).await
 }
 
+/// RAII guard for the terminal alt-screen + raw-mode pair. Whatever the
+/// inner future does (Ok, Err, panic), the terminal is restored before we
+/// leave this scope. Without this guard, an early error left the user's
+/// shell in raw-mode + alt-screen.
+struct TerminalGuard {
+    terminal: Terminal<CrosstermBackend<Stdout>>,
+}
+
+impl TerminalGuard {
+    fn enter() -> Result<Self> {
+        if !io::stdin().is_terminal() {
+            bail!(
+                "ono-sendai needs an interactive TTY on stdin. \
+                 Run it from a real terminal — not a pipe, CI runner, or \
+                 non-PTY ssh session."
+            );
+        }
+        enable_raw_mode().context("enable raw mode")?;
+        let mut stdout = io::stdout();
+        if let Err(e) = execute!(stdout, EnterAlternateScreen, EnableMouseCapture) {
+            // We entered raw mode but failed to enter alt-screen; undo
+            // the raw-mode so the shell is left usable.
+            let _ = disable_raw_mode();
+            return Err(e).context("enter alternate screen");
+        }
+        let backend = CrosstermBackend::new(stdout);
+        let terminal = Terminal::new(backend).context("create terminal")?;
+        Ok(Self { terminal })
+    }
+}
+
+impl Drop for TerminalGuard {
+    fn drop(&mut self) {
+        // Best-effort restore. Don't panic from Drop and don't shadow the
+        // caller's error with a teardown failure.
+        let _ = execute!(
+            self.terminal.backend_mut(),
+            LeaveAlternateScreen,
+            DisableMouseCapture
+        );
+        let _ = self.terminal.show_cursor();
+        let _ = disable_raw_mode();
+    }
+}
+
 async fn run_with(app: &mut App) -> Result<()> {
-    enable_raw_mode()?;
-    let mut stdout = io::stdout();
-    execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
-    let backend = CrosstermBackend::new(stdout);
-    let mut terminal = Terminal::new(backend)?;
-    let result = app.run(&mut terminal).await;
-    disable_raw_mode()?;
-    execute!(
-        terminal.backend_mut(),
-        LeaveAlternateScreen,
-        DisableMouseCapture
-    )?;
-    terminal.show_cursor()?;
-    result
+    let mut guard = TerminalGuard::enter()?;
+    app.run(&mut guard.terminal).await
 }
 
 /// Carrier struct so `App` can hold an optional orchestrator binding

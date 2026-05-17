@@ -62,24 +62,34 @@ impl Store for SqliteStore {
         let session_str = session.to_string();
         let conn = self.conn.clone();
         tokio::task::spawn_blocking(move || -> Result<()> {
-            let conn = conn.lock().expect("store mutex");
-            conn.execute(
+            let mut conn = conn
+                .lock()
+                .map_err(|e| DeckError::Store(format!("mutex poisoned: {e}")))?;
+            // Atomic INSERT-session + SELECT MAX(seq) + INSERT-message so
+            // two concurrent appends on the same session can never collide
+            // on the (session_id, seq) primary key.
+            let tx = conn
+                .transaction()
+                .map_err(|e| DeckError::Store(format!("begin tx: {e}")))?;
+            tx.execute(
                 "INSERT OR IGNORE INTO sessions(id) VALUES (?1)",
                 params![session_str],
             )
             .map_err(|e| DeckError::Store(format!("upsert session: {e}")))?;
-            let next: i64 = conn
+            let next: i64 = tx
                 .query_row(
                     "SELECT COALESCE(MAX(seq), -1) + 1 FROM messages WHERE session_id = ?1",
                     params![session_str],
                     |row| row.get(0),
                 )
                 .map_err(|e| DeckError::Store(format!("next seq: {e}")))?;
-            conn.execute(
+            tx.execute(
                 "INSERT INTO messages(session_id, seq, role, content, tool_calls) VALUES (?1, ?2, ?3, ?4, ?5)",
                 params![session_str, next, role, content, tool_calls],
             )
             .map_err(|e| DeckError::Store(format!("insert message: {e}")))?;
+            tx.commit()
+                .map_err(|e| DeckError::Store(format!("commit: {e}")))?;
             Ok(())
         })
         .await
@@ -90,7 +100,9 @@ impl Store for SqliteStore {
         let session_str = session.to_string();
         let conn = self.conn.clone();
         tokio::task::spawn_blocking(move || -> Result<Vec<Message>> {
-            let conn = conn.lock().expect("store mutex");
+            let conn = conn
+                .lock()
+                .map_err(|e| DeckError::Store(format!("mutex poisoned: {e}")))?;
             let mut stmt = conn
                 .prepare(
                     "SELECT role, content, tool_calls FROM messages WHERE session_id = ?1 ORDER BY seq ASC",
@@ -128,7 +140,9 @@ impl Store for SqliteStore {
     async fn list(&self) -> Result<Vec<SessionId>> {
         let conn = self.conn.clone();
         tokio::task::spawn_blocking(move || -> Result<Vec<SessionId>> {
-            let conn = conn.lock().expect("store mutex");
+            let conn = conn
+                .lock()
+                .map_err(|e| DeckError::Store(format!("mutex poisoned: {e}")))?;
             let mut stmt = conn
                 .prepare("SELECT id FROM sessions ORDER BY created_at ASC")
                 .map_err(|e| DeckError::Store(format!("prepare: {e}")))?;

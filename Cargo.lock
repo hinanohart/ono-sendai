@@ -502,7 +502,7 @@ dependencies = [
 
 [[package]]
 name = "deck-core"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -520,7 +520,7 @@ dependencies = [
 
 [[package]]
 name = "deck-llm"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "async-stream",
@@ -537,7 +537,7 @@ dependencies = [
 
 [[package]]
 name = "deck-mcp"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -551,7 +551,7 @@ dependencies = [
 
 [[package]]
 name = "deck-orchestrator"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -568,7 +568,7 @@ dependencies = [
 
 [[package]]
 name = "deck-plugin"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "deck-core",
@@ -581,7 +581,7 @@ dependencies = [
 
 [[package]]
 name = "deck-sandbox"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "deck-core",
@@ -594,7 +594,7 @@ dependencies = [
 
 [[package]]
 name = "deck-store"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "age",
  "anyhow",
@@ -615,7 +615,7 @@ dependencies = [
 
 [[package]]
 name = "deck-tui"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "crossterm",
@@ -1198,7 +1198,7 @@ dependencies = [
 
 [[package]]
 name = "icebreaker-plugin"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "deck-core",
@@ -1550,7 +1550,7 @@ checksum = "f8ca58f447f06ed17d5fc4043ce1b10dd205e060fb3ce5b979b8ed8e59ff3f79"
 
 [[package]]
 name = "mesh-plugin"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "deck-core",
@@ -1616,7 +1616,7 @@ checksum = "384b8ab6d37215f3c5301a95a4accb5d64aa607f1fcb26a11b5303878451b4fe"
 
 [[package]]
 name = "ono-sendai"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "clap",

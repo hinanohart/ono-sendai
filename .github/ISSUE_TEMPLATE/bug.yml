@@ -1,0 +1,64 @@
+name: Bug report
+description: A reproducible defect in ono-sendai
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug. The more reproducible
+        the report, the faster it gets fixed.
+  - type: input
+    id: version
+    attributes:
+      label: ono-sendai version
+      description: Output of `ono-sendai --version` (or git SHA if built from source)
+      placeholder: "0.1.1"
+    validations:
+      required: true
+  - type: dropdown
+    id: backend
+    attributes:
+      label: LLM backend
+      options:
+        - mock (offline, deterministic)
+        - ollama
+        - other / unsure
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: OS / kernel
+      placeholder: "Ubuntu 24.04 / 6.6.0"
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: Exact commands. Mock backend reproductions are easiest to triage.
+      placeholder: |
+        1. cargo run -- --backend mock run
+        2. type "hello"
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: What actually happened
+      description: Include any error output. `RUST_LOG=debug` or `-vv` helps.
+    validations:
+      required: true
+  - type: textarea
+    id: doctor
+    attributes:
+      label: ono-sendai doctor output
+      description: Paste `ono-sendai doctor` so we can see sandbox/store state.
+      render: shell

@@ -13,7 +13,9 @@ Persistence is local SQLite; `age` encryption-at-rest lands in 0.2 alongside
 the XDG `decks/<id>/identity.age` layout.
 
 The name is a nod to the Ono-Sendai Cyberspace 7, the deck Case rides in
-*Neuromancer*. This project is the deck — not the matrix.
+*Neuromancer*. This project is the deck — not the matrix. Not affiliated
+with, endorsed by, or sponsored by William Gibson or his estate; the name
+is used as homage to a fictional brand from the book.
 
 ## Status
 
@@ -32,27 +34,37 @@ cargo run -- --backend mock run
 ```
 
 (`--release` works too but the debug build starts faster on a cold
-checkout.)
+checkout. Requires an interactive TTY — running through a pipe, CI
+runner, or non-PTY ssh session will exit early with a clear message.)
 
 Type a line, hit Enter, watch the mock reply stream in. `:q` exits.
 
 ## Why another LLM TUI?
 
-| Existing                   | Gap                                                |
-|----------------------------|----------------------------------------------------|
-| Claude Code / Cursor       | Cloud-bound, no air-gap mode                       |
-| aider                      | Git-centric, no MCP host                           |
-| Continue, Codeium          | IDE plugin, not a deck                             |
-| Ollama UIs (Web)           | Browser-bound, no sandbox for tool execution       |
-| **ono-sendai**             | **TUI + local LLM + MCP + sandbox host (enforce 0.2)** |
+A few similar projects already ship pieces of what `ono-sendai` aims at:
 
-The planned differentiator is the *sandbox*: in 0.2, every MCP tool call
-from an untrusted server will be dispatched through `deck-sandbox`
-(seccomp BPF + landlock filesystem ruleset) so a malicious or poisoned MCP
-server cannot exfiltrate beyond its declared filesystem ruleset. In 0.1
-the crate ships the trait surface and the `SandboxProfile` types; the
-fork+exec helper that applies the policy pre-`exec(2)` is the headline
-work item of the next release.
+| Project                          | What it does today                                   | What ono-sendai bets on differently               |
+|----------------------------------|------------------------------------------------------|---------------------------------------------------|
+| Claude Code / Cursor             | Cloud-bound, no air-gap mode                         | offline-first                                     |
+| aider                            | Git-centric CLI, no MCP host                         | MCP host + non-git workflows                      |
+| gptme                            | Python CLI, MCP + sandboxed shell exec               | Rust single binary, no Python install required    |
+| OpenCode                         | Go TUI, MCP + Ollama backend                         | exposes the sandbox crate as a reusable library   |
+| OpenAI Codex CLI                 | Rust, seccomp + Landlock default-on (Linux)          | open workspace, plugin host, MCP-as-tools layer   |
+| Continue / Codeium               | IDE plugin, not a deck                               | terminal-native, no editor coupling               |
+
+Honest framing: as of 0.1 the headline feature — sandbox enforcement of
+untrusted MCP tool execution — is **scaffolded but not yet wired**
+(`Sandbox::enforces() == false`). OpenAI Codex already ships seccomp +
+Landlock default-on on Linux. The differentiator ono-sendai is reaching
+for is *first-class workspace decomposition*: `deck-sandbox`,
+`deck-mcp`, `deck-llm` are reusable library crates, not private
+internals. If you want to embed an MCP host with a sandbox policy in
+your own Rust application, the goal is that you can depend on those
+crates directly. The standalone binary is one consumer of the workspace,
+not the whole project.
+
+In 0.2 the fork+exec helper lands and `deck-sandbox` actually applies
+the seccomp BPF + Landlock ruleset pre-`exec(2)`.
 
 ## Architecture
 
@@ -82,5 +94,12 @@ degrade gracefully on platforms without seccomp/landlock.
 
 ## License
 
-MIT. All major dependencies are MIT / Apache-2.0 / BSD; we deliberately avoid
-GPL-3 and CC-BY-NC components.
+Dual-licensed under either of [MIT](LICENSE) or
+[Apache-2.0](LICENSE-APACHE), at your option. This matches Rust ecosystem
+convention; the Apache half gives downstream consumers an explicit patent
+grant. All major dependencies are MIT / Apache-2.0 / BSD; we deliberately
+avoid GPL-3 and CC-BY-NC components (enforced by `deny.toml` in CI).
+
+Unless you explicitly state otherwise, any contribution intentionally
+submitted for inclusion shall be dual-licensed as above, without any
+additional terms or conditions.

@@ -1,0 +1,45 @@
+name: Feature request
+description: Propose new functionality
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Check `docs/ROADMAP.md` first — many likely features are already
+        slotted into 0.2 / 1.0 / 1.5.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem this would solve
+      description: What can't you do today?
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: Rough shape only. Don't worry about API specifics yet.
+    validations:
+      required: true
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Which crate is most affected?
+      options:
+        - "deck-core"
+        - "deck-llm"
+        - "deck-mcp"
+        - "deck-store"
+        - "deck-tui"
+        - "deck-sandbox"
+        - "deck-orchestrator"
+        - "deck-plugin"
+        - "binary / overall"
+        - "docs / packaging"
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Any workarounds you've tried, or other projects that solve this differently.
