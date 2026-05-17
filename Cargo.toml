@@ -50,7 +50,7 @@ url = "2"
 uuid = { version = "1", features = ["v4", "serde"] }
 time = { version = "0.3", features = ["serde", "formatting", "parsing"] }
 once_cell = "1"
-dirs = "5"
+dirs = "6"
 
 deck-core = { path = "crates/deck-core", version = "0.1.1" }
 deck-llm = { path = "crates/deck-llm", version = "0.1.1" }
