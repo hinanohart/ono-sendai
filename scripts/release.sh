@@ -64,6 +64,7 @@ EXECUTE=0
 SKIP_PUBLISH=0
 SKIP_COMMUNITY=0
 SKIP_DRY_RUN=0
+ALLOW_TAG_MISMATCH=0
 BUMP_VERSION=""
 
 while [[ $# -gt 0 ]]; do
@@ -72,6 +73,7 @@ while [[ $# -gt 0 ]]; do
     --skip-publish) SKIP_PUBLISH=1; shift ;;
     --skip-community) SKIP_COMMUNITY=1; shift ;;
     --skip-dry-run) SKIP_DRY_RUN=1; shift ;;
+    --allow-tag-mismatch) ALLOW_TAG_MISMATCH=1; shift ;;
     -h|--help)
       sed -n '2,40p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
       exit 0
@@ -293,8 +295,12 @@ if git rev-parse "$TAG" >/dev/null 2>&1; then
   EXISTING="$(git rev-list -n 1 "$TAG")"
   if [[ "$EXISTING" == "$(git rev-parse HEAD)" ]]; then
     ok "$TAG already exists at HEAD"
+  elif [[ $ALLOW_TAG_MISMATCH -eq 1 ]]; then
+    warn "$TAG points at $EXISTING (HEAD is $(git rev-parse HEAD))."
+    warn "Continuing because --allow-tag-mismatch was passed. crates.io will see"
+    warn "the HEAD's Cargo.toml; ensure the version still matches the tag."
   else
-    die "$TAG already exists but points at $EXISTING (HEAD is $(git rev-parse HEAD)). Refusing to move a public tag — bump version instead."
+    die "$TAG already exists but points at $EXISTING (HEAD is $(git rev-parse HEAD)). Refusing to move a public tag — bump version, or pass --allow-tag-mismatch if HEAD only differs in non-crate files (scripts/, docs/, etc.)."
   fi
 else
   run git tag -a "$TAG" -m "ono-sendai $TAG"
@@ -328,6 +334,35 @@ if [[ $SKIP_PUBLISH -eq 0 ]]; then
     return 1
   }
 
+  publish_with_retry() {
+    # publish_with_retry <crate-name> <manifest-or-empty>
+    # Retries on HTTP 429 (crates.io new-crate rate limit, default 1 per
+    # 10 minutes) up to 6 times = ~70 minutes of backoff. All other
+    # failures bubble up immediately.
+    local cname="$1"; local manifest="$2"
+    local attempt=0; local max=6; local sleep_secs=660
+    local out rc=0
+    while (( attempt < max )); do
+      if [[ -n "$manifest" ]]; then
+        out=$(cargo publish --manifest-path "$manifest" 2>&1) && rc=0 || rc=$?
+      else
+        out=$(cargo publish 2>&1) && rc=0 || rc=$?
+      fi
+      printf '%s\n' "$out"
+      if (( rc == 0 )); then
+        return 0
+      fi
+      if echo "$out" | grep -q "429 Too Many Requests"; then
+        attempt=$((attempt+1))
+        warn "rate-limited on $cname (attempt $attempt/$max). Sleeping $sleep_secs s before retry."
+        sleep "$sleep_secs"
+        continue
+      fi
+      return "$rc"
+    done
+    return 1
+  }
+
   for crate_path in "${PUBLISH_ORDER[@]}"; do
     local_manifest="$crate_path/Cargo.toml"
     [[ "$crate_path" == "." ]] && local_manifest="Cargo.toml"
@@ -342,16 +377,28 @@ if [[ $SKIP_PUBLISH -eq 0 ]]; then
 
     info "publishing $crate_name $TARGET_VERSION"
     if [[ "$crate_path" == "." ]]; then
-      run cargo publish
+      if [[ $EXECUTE -eq 1 ]]; then
+        publish_with_retry "$crate_name" "" \
+          || die "$crate_name publish failed after retries. Re-run to resume." 3
+      else
+        info "(dry-run) would publish $crate_name"
+      fi
     else
-      run cargo publish --manifest-path "$local_manifest"
+      if [[ $EXECUTE -eq 1 ]]; then
+        publish_with_retry "$crate_name" "$local_manifest" \
+          || die "$crate_name publish failed after retries. Re-run to resume." 3
+      else
+        info "(dry-run) would publish $crate_name"
+      fi
     fi
 
-    info "waiting for crates.io index to surface $crate_name=$TARGET_VERSION (max 2m)"
-    if poll_index "$crate_name" "$TARGET_VERSION"; then
-      ok "$crate_name visible on index"
-    else
-      die "$crate_name not visible on crates.io index after 2 minutes. Re-run the script to resume." 3
+    if [[ $EXECUTE -eq 1 ]]; then
+      info "waiting for crates.io index to surface $crate_name=$TARGET_VERSION (max 2m)"
+      if poll_index "$crate_name" "$TARGET_VERSION"; then
+        ok "$crate_name visible on index"
+      else
+        die "$crate_name not visible on crates.io index after 2 minutes. Re-run the script to resume." 3
+      fi
     fi
   done
 fi
