@@ -41,7 +41,7 @@ futures = "0.3"
 bytes = "1"
 crossterm = "0.29"
 ratatui = "0.29"
-rusqlite = { version = "0.32", features = ["bundled"] }
+rusqlite = { version = "0.39", features = ["bundled"] }
 age = "0.11"
 secrecy = "0.10"
 zeroize = "1"
