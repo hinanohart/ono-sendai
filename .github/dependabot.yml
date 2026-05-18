@@ -19,6 +19,15 @@ updates:
         patterns:
           - "serde"
           - "serde_*"
+    ignore:
+      - dependency-name: "toml"
+        update-types:
+          - "version-update:semver-major"
+        versions: [">=1"]
+      - dependency-name: "dirs"
+        update-types:
+          - "version-update:semver-major"
+        versions: [">=6"]
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
