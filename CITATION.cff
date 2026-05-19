@@ -6,7 +6,7 @@ authors:
     given-names: "Hinano"
     alias: "hinanohart"
 type: software
-license: "NOASSERTION"
+license: MIT
 repository-code: "https://github.com/hinanohart/ono-sendai"
 url: "https://crates.io/crates/ono-sendai"
 version: "0.1.1"
