@@ -94,12 +94,10 @@ degrade gracefully on platforms without seccomp/landlock.
 
 ## License
 
-Dual-licensed under either of [MIT](LICENSE) or
-[MIT](LICENSE-APACHE), at your option. This matches Rust ecosystem
-convention; the Apache half gives downstream consumers an explicit patent
-grant. All major dependencies are MIT / MIT / BSD; we deliberately
-avoid GPL-3 and CC-BY-NC components (enforced by `deny.toml` in CI).
+MIT licensed. See [LICENSE](LICENSE). All major dependencies are
+permissively licensed (MIT / Apache-2.0 / BSD); we deliberately avoid
+GPL-3 and CC-BY-NC components (enforced by `deny.toml` in CI).
 
 Unless you explicitly state otherwise, any contribution intentionally
-submitted for inclusion shall be dual-licensed as above, without any
+submitted for inclusion shall be licensed as above, without any
 additional terms or conditions.
