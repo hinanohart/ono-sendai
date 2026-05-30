@@ -205,7 +205,7 @@ ok "target version: $TARGET_VERSION  (tag: $TAG)"
 
 if [[ $SKIP_COMMUNITY -eq 0 ]]; then
   step "Phase 2: community files sanity"
-  for f in CODE_OF_CONDUCT.md SECURITY.md CONTRIBUTING.md LICENSE LICENSE-APACHE \
+  for f in CODE_OF_CONDUCT.md SECURITY.md CONTRIBUTING.md LICENSE \
            .github/dependabot.yml .github/ISSUE_TEMPLATE/bug.yml \
            .github/ISSUE_TEMPLATE/feature.yml .github/PULL_REQUEST_TEMPLATE.md; do
     if [[ -f "$f" ]]; then
@@ -441,7 +441,7 @@ fi
 step "Phase 9: repo metadata (idempotent)"
 
 run gh repo edit "$REPO_SLUG" \
-  --description "Console Cowboy deck — pre-alpha Rust workspace for an offline-first terminal TUI agent (ratatui + local LLM + MCP host). Sandbox enforcement lands in 0.2. MIT OR Apache-2.0." \
+  --description "Console Cowboy deck — pre-alpha Rust workspace for an offline-first terminal TUI agent (ratatui + local LLM + MCP host). Sandbox enforcement lands in 0.2. MIT." \
   --homepage "https://crates.io/crates/ono-sendai" \
   --add-topic rust --add-topic tui --add-topic llm --add-topic mcp \
   --add-topic ollama --add-topic agent --add-topic cyberdeck \
