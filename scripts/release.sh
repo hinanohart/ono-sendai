@@ -205,7 +205,7 @@ ok "target version: $TARGET_VERSION  (tag: $TAG)"
 
 if [[ $SKIP_COMMUNITY -eq 0 ]]; then
   step "Phase 2: community files sanity"
-  for f in CODE_OF_CONDUCT.md SECURITY.md CONTRIBUTING.md LICENSE \
+  for f in CODE_OF_CONDUCT.md SECURITY.md CONTRIBUTING.md LICENSE-APACHE LICENSE-MIT \
            .github/dependabot.yml .github/ISSUE_TEMPLATE/bug.yml \
            .github/ISSUE_TEMPLATE/feature.yml .github/PULL_REQUEST_TEMPLATE.md; do
     if [[ -f "$f" ]]; then

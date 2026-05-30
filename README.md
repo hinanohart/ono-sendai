@@ -94,10 +94,16 @@ degrade gracefully on platforms without seccomp/landlock.
 
 ## License
 
-MIT licensed. See [LICENSE](LICENSE). All major dependencies are
-permissively licensed (MIT / Apache-2.0 / BSD); we deliberately avoid
-GPL-3 and CC-BY-NC components (enforced by `deny.toml` in CI).
+Licensed under either of
 
-Unless you explicitly state otherwise, any contribution intentionally
-submitted for inclusion shall be licensed as above, without any
-additional terms or conditions.
+- Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) or http://www.apache.org/licenses/LICENSE-2.0)
+- MIT license ([LICENSE-MIT](LICENSE-MIT) or http://opensource.org/licenses/MIT)
+
+at your option.
+
+All major dependencies are permissively licensed (MIT / Apache-2.0 / BSD); we
+deliberately avoid GPL-3 and CC-BY-NC components (enforced by `deny.toml` in CI).
+
+Unless you explicitly state otherwise, any contribution intentionally submitted
+for inclusion in the work by you, as defined in the Apache-2.0 license, shall be
+dual licensed as above, without any additional terms or conditions.
