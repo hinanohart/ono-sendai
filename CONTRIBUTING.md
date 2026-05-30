@@ -5,7 +5,7 @@ surface area is changing fast, but issues and small PRs are welcome.
 
 ## Ground rules
 
-- **License**: contributions are accepted under MIT. The project will
+- **License**: contributions are accepted under MIT OR Apache-2.0 (the project's dual license). The project will
   not accept GPL-3, AGPL, or non-commercial licensed code; CI rejects
   such dependencies via `deny.toml`.
 - **Authorship**: published crates list `authors = ["ono-sendai
